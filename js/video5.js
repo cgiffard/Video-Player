@@ -311,13 +311,15 @@
 				wrapperObject.volumeControlVisible = true;
 			
 				var closeVolumeControl = function closeVolumeControl(eventData) {
-					wrapperObject.volumeDisclosure
-					clearEvent(wrapperObject.volumeDisclosure,"click",temporaryEvent);
+					wrapperObject.hideVolumeControl();
+					clearEvent(wrapperObject.volumeDisclosure,"click",temporaryClickEvent);
+					clearEvent(wrapperObject.seekBarVolumeControl,"blur",temporaryBlurEvent);
 					onEvent(wrapperObject.volumeDisclosure,"click",wrapperObject.displayVolumeControl);
 				};
 			
 				clearEvent(wrapperObject.volumeDisclosure,"click",wrapperObject.displayVolumeControl);
-				var temporaryEvent = onEvent(wrapperObject.volumeDisclosure,"click",closeVolumeControl);
+				var temporaryClickEvent = onEvent(wrapperObject.volumeDisclosure,"click",closeVolumeControl);
+				var temporaryBlurEvent = onEvent(wrapperObject.seekBarVolumeControl,"blur",closeVolumeControl);
 		
 				var volumeEvents = onEvent(wrapperObject.seekBarVolumeControl,"click",function volumeEvents(eventData) {
 					eventData.cancelBubble = true;
@@ -330,8 +332,10 @@
 		
 		this.hideVolumeControl = function hideVolumeControl() {
 			if (wrapperObject.volumeControlVisible) {
+				console.log("hiding volume control");
+				wrapperObject.volumeDisclosure.
 				wrapperObject.volumeDisclosure.removeAttribute("open");
-				wrapperObject.volumeDisclosure.className.replace(/\bopen\b/ig,"");
+				wrapperObject.volumeDisclosure.className = wrapperObject.volumeDisclosure.className.replace(/\bopen\b/ig,"");
 				wrapperObject.seekBarVolumeControl.blur();
 				wrapperObject.volumeControlVisible = false;
 			}
@@ -340,8 +344,7 @@
 		this.updateVolume = function udpateVolume(eventData) {
 			wrapperObject.videoObject.volume = wrapperObject.seekBarVolumeControl.value/20;
 		};
-		
-	}
+	};
 
 	var _q = function _q(input,search) {
 		search = search instanceof HTMLElement ? search : document;
@@ -352,7 +355,11 @@
 			if (Sizzle) {
 				return Sizzle(input,search);
 			} else {
-				throw new Error("Video5.js relies on Sizzle.js in browsers which do not support querySelectorAll - but it wasn't found.")
+				if ($) {
+					return Array.prototype.slice.call($(search).find(input),0);
+				} else {
+					throw new Error("Video5.js relies on Sizzle.js in browsers which do not support querySelectorAll - but it wasn't found.")
+				}
 			}
 		}
 	}

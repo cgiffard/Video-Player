@@ -1,3 +1,12 @@
+/* 
+
+	(As Yet Untitled) Video Player
+	Christopher Giffard, 2011
+
+	Share and Enjoy
+
+*/
+
 (function() {
 	
 	var Video5Wrapper = function Video5Wrapper(videoObject) {

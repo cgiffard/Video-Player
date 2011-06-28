@@ -138,6 +138,7 @@
 			onEvent(this.videoObject,"timeupdate",this.timeUpdate);
 			onEvent(this.volumeDisclosure,"click",this.displayVolumeControl);
 			onEvent(this.seekBarVolumeControl,"focus",this.displayVolumeControl);
+			onEvent(this.seekBarVolumeControl,"blur",this.displayVolumeControl);
 			onEvent(this.seekBarVolumeControl,"change",this.updateVolume);
 			
 			// Update positioning
@@ -318,31 +319,22 @@
 				wrapperObject.volumeDisclosure.className += " open";
 				wrapperObject.seekBarVolumeControl.focus();
 				wrapperObject.volumeControlVisible = true;
-			
-				var closeVolumeControl = function closeVolumeControl(eventData) {
-					wrapperObject.hideVolumeControl();
-					clearEvent(wrapperObject.volumeDisclosure,"click",temporaryClickEvent);
-					clearEvent(wrapperObject.seekBarVolumeControl,"blur",temporaryBlurEvent);
-					onEvent(wrapperObject.volumeDisclosure,"click",wrapperObject.displayVolumeControl);
-				};
-			
-				clearEvent(wrapperObject.volumeDisclosure,"click",wrapperObject.displayVolumeControl);
-				var temporaryClickEvent = onEvent(wrapperObject.volumeDisclosure,"click",closeVolumeControl);
-				var temporaryBlurEvent = onEvent(wrapperObject.seekBarVolumeControl,"blur",closeVolumeControl);
-		
+				
 				var volumeEvents = onEvent(wrapperObject.seekBarVolumeControl,"click",function volumeEvents(eventData) {
 					eventData.cancelBubble = true;
 					eventData.preventDefault();
 					eventData.stopPropagation();
 					wrapperObject.seekBarVolumeControl
 				});
+			} else {
+				wrapperObject.hideVolumeControl();
 			}
 		};
 		
 		this.hideVolumeControl = function hideVolumeControl() {
 			if (wrapperObject.volumeControlVisible) {
 				console.log("hiding volume control");
-				wrapperObject.volumeDisclosure.
+				// wrapperObject.volumeDisclosure.
 				wrapperObject.volumeDisclosure.removeAttribute("open");
 				wrapperObject.volumeDisclosure.className = wrapperObject.volumeDisclosure.className.replace(/\bopen\b/ig,"");
 				wrapperObject.seekBarVolumeControl.blur();

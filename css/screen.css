@@ -48,6 +48,10 @@
 		top: 0px;
 		position: absolute;
 		color: #aeaeae;
+
+		background-image: -moz-radial-gradient(50% 50% 90deg, ellipse farthest-corner, rgba(0,0,0,0), rgba(0,0,0,0.6));
+		background-image: -webkit-gradient(radial, center center, 0, center center, 250, from(transparent), to(rgba(0,0,0,0.6)));
+		-webkit-background-size: 100% 100%;
 	}
 	
 	.playing .videoHud {
@@ -56,6 +60,8 @@
 		-o-transition: opacity 500ms linear;
 		transition: opacity 500ms linear;
 		opacity: 0;
+
+		background-image: none !important;
 	}
 	
 	.playing .videoHud:hover {
@@ -111,7 +117,7 @@
 				margin-top: -10000px;
 			}
 			
-			.seekBar button, .seekBar details {
+			.seekBar button, .seekBar details, .seekBar .details {
 				display: block;
 				border: none;
 				background-color: transparent;
@@ -121,30 +127,34 @@
 				
 				/* fix superfat text rendering in webkit */
 				text-shadow: #1e1e1e 0px 0px 5px;
+				font-family: Pictos;
 			}
 			
 			.seekBar button:focus, .seekBar button:hover,
-			.seekBar details:focus, .seekBar details:hover {
+			.seekBar details:focus, .seekBar details:hover,
+			.seekBar .details:focus, .seekBar .details:hover {
 				text-shadow: white 0px 0px 5px;
 				color: white;
 			}
 			
-			.seekBar button:active, .seekBar details:active {
+			.seekBar button:active, .seekBar details:active,
+			.seekBar .details:active {
 				color: white;
 				text-shadow: rgba(0,0,0,0.1) 0px 0px 5px;
 			}
-			
-			.seekBar button:before, .seekBar details:before {
+
+			/*--------This Part Crashes Chrome (ARGH!)------------------------------------------------------------------------*/
+			/*----------------------------------------------------------------------------------------------------------------*/
+			.seekBar button:before, .seekBar details:before, .seekBar .details:before {
 				display: block;
 				position: relative;
 				width: 35px;
 				height: 27px;
 				line-height: 31px;
-				font-family: Pictos;
 				font-size: 16pt;
 				text-align: center;
-				content: ".";
 				font-weight: normal;
+				content: ".";
 			}
 			
 			.seekBar button.play:before {
@@ -161,12 +171,12 @@
 				line-height: 28px;
 			}
 			
-			.seekBar details:before {
+			.seekBar details:before, .seekBar .details:before {
 				content: ">";
 				font-size: 13pt;
 				line-height: 28px;
 			}
-			
+			/*----------------------------------------------------------------------------------------------------------------*/
 			.seekBar input.bevelled {
 				border: 0px !important;
 				-webkit-appearance: none;
@@ -279,22 +289,22 @@
 				width: 25px;
 			}
 			
-			.seekBar details {
+			.seekBar details, .seekBar .details {
 				position: relative;
 				width: 26px;
 				height: 27px;
 				overflow: hidden;
 			}
 			
-				.seekBar details * {
+				.seekBar details *, .seekBar .details * {
 					opacity: 0;
 				}
 			
-			.seekBar details.open {
+			.seekBar details.open, .seekBar .details.open {
 				overflow: visible;
 			}
 			
-				.seekBar details.open * {
+				.seekBar details.open *, .seekBar .details.open {
 					opacity: 1;
 				}
 			
@@ -303,7 +313,7 @@
 					display: none;
 				}
 				
-				.seekBar details input.volume {
+				.seekBar details input.volume, .seekBar .details input.volume {
 					display: block;
 					height: 14px;
 					width: 70px;
@@ -330,17 +340,31 @@
 					
 					-webkit-box-shadow: inset #141414 -1px -1px 0px,
 										inset #666666 0px 1px 0px;
+					-moz-box-shadow:	inset #141414 -1px -1px 0px,
+										inset #666666 0px 1px 0px !important;
+					-o-box-shadow:		inset #141414 -1px -1px 0px,
+										inset #666666 0px 1px 0px !important;
+					box-shadow:			inset #141414 -1px -1px 0px,
+										inset #666666 0px 1px 0px !important;
 					
 					border: solid rgba(0,0,0,0.6) 5px !important;
 				}
 				
-				.seekBar details input.volume:focus {
+				.seekBar details input.volume:focus,
+				.seekBar .details input.volume:focus {
 					-webkit-box-shadow: inset #141414 -1px -1px 0px,
+										inset #666666 0px 1px 0px !important;
+					-moz-box-shadow:	inset #141414 -1px -1px 0px,
+										inset #666666 0px 1px 0px !important;
+					-o-box-shadow:		inset #141414 -1px -1px 0px,
+										inset #666666 0px 1px 0px !important;
+					box-shadow:			inset #141414 -1px -1px 0px,
 										inset #666666 0px 1px 0px !important;
 					outline: none !important;
 				}
 				
-				.seekBar details.open input.volume {
+				.seekBar details.open input.volume,
+				.seekBar .details.open input.volume {
 					position: absolute;
 					margin-top: -22px;
 					margin-top: -107px;

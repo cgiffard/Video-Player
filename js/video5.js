@@ -81,8 +81,7 @@
 			this.videoObject.controls = false;
 		
 			// Begin making our own
-			this.videoID = "video5-" + this.generateRandomID(32);
-		
+			this.videoID					= "video5-" + this.generateRandomID(32);
 			this.videoWidth					= parseInt(videoStyles.getPropertyValue("width").replace(/[^\d]/ig,""),10);
 			this.videoHeight 				= parseInt(videoStyles.getPropertyValue("height").replace(/[^\d]/ig,""),10);
 			this.videoContainer				= document.createElement("div");
@@ -113,8 +112,8 @@
 				'<div class="thumb" id="' + this.videoID + '-thumb">&nbsp;</div>' +
 				'<input type="range" min="0" max="100" step="0.0001" value="0" id="' + this.videoID + '-range" class="playprogress bevelled" title="Video Seek Bar" />' +
 				'<label for="' + this.videoID + '-range" class="remaining" title="Time Remaining"><span>Time remaining:</span><time>00:00</time></label>' +
-				'<details><summary><label for="' + this.videoID + '-volume"><span>Audio Volume</span></label></summary>' +
-				'<input type="range" min="1" max="20" value="20" id="' + this.videoID + '-volume" class="volume bevelled" title="Audio Volume" /></details>' +
+				'<div class="details"><summary><label for="' + this.videoID + '-volume"><span>Audio Volume</span></label></summary>' +
+				'<input type="range" min="1" max="20" value="20" id="' + this.videoID + '-volume" class="volume bevelled" title="Audio Volume" /></div>' +
 				'<button class="fullscreen" /><span>Fullscreen</span></label>';
 		
 			this.timeElapsedText		= this.seekBar.getElementsByClassName("elapsed")[0].getElementsByTagName("time")[0];
@@ -123,7 +122,7 @@
 			this.timeRemainingLabel		= this.seekBar.getElementsByClassName("remaining")[0];
 			this.playPauseButton		= this.seekBar.getElementsByClassName("play")[0];
 			this.fullscreenButton		= this.seekBar.getElementsByClassName("fullscreen")[0];
-			this.volumeDisclosure		= this.seekBar.getElementsByTagName("details")[0];
+			this.volumeDisclosure		= this.seekBar.getElementsByClassName("details")[0];
 			this.seekBarRangeControl	= document.getElementById(this.videoID + "-range");
 			this.seekBarThumbControl	= document.getElementById(this.videoID + "-thumb");
 			this.seekBarVolumeControl	= document.getElementById(this.videoID + "-volume");
@@ -143,7 +142,7 @@
 			// Update positioning
 			this.updateUIPositioning();
 		};
-	
+		
 		this.updateUIPositioning = function updateUIPositioning() {
 			// Sets up the width of the range input based on calculated button widths and total width of the toolbar
 			var combinedWidth = 0;
@@ -342,7 +341,7 @@
 		this.hideVolumeControl = function hideVolumeControl() {
 			if (wrapperObject.volumeControlVisible) {
 				console.log("hiding volume control");
-				wrapperObject.volumeDisclosure.
+				//wrapperObject.volumeDisclosure.
 				wrapperObject.volumeDisclosure.removeAttribute("open");
 				wrapperObject.volumeDisclosure.className = wrapperObject.volumeDisclosure.className.replace(/\bopen\b/ig,"");
 				wrapperObject.seekBarVolumeControl.blur();

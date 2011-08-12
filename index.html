@@ -4,13 +4,28 @@
 		<title>Video Player Test</title>
 		<meta charset="utf-8" />
 		
-		<link rel="stylesheet" href="css/screen.css" type="text/css" media="screen" title="no title" charset="utf-8">
+		<link rel="stylesheet" href="css/screen.css" type="text/css" media="screen" charset="utf-8" />
+		<link rel="stylesheet" href="css/video5.css" type="text/css" media="screen" charset="utf-8" />
 	</head>
 	<body>
 		<video width="512" height="288" poster="assets/timescapes.jpg" title="Timelapse photography video" class="video5" controls>
 			<source src="assets/timescapes.mp4" type="video/mp4" />
 			<source src="assets/timescapes.webm" type="video/webm" />
 			<source src="assets/timescapes.theora.ogv" type="video/ogv" />
+			<track kind="captions" src="/~cgiffard/captioncrunch/video/acid.webvtt" type="text/webvtt" srclang="en" label="WebVTT Acid Test" default />
+			<track kind="captions" src="/~cgiffard/captioncrunch/video/example.webvtt" type="text/webvtt" srclang="en" label="WHATWG's WebVTT Example" />
+			<track kind="captions" src="/~cgiffard/captioncrunch/video/arduino-en.srt" type="text/srt" srclang="en" label="English Subtitles" />
+			<track kind="captions" src="/~cgiffard/captioncrunch/video/arduino-de.srt" type="text/srt" srclang="de" label="German Subtitles" />
+			<track kind="captions" src="/~cgiffard/captioncrunch/video/arduino-ja.srt" type="text/srt" srclang="ja" label="Japanese Subtitles" />
+		</video>
+		<br />
+		<video width="512" height="288" poster="assets/timescapes.jpg" title="Timelapse photography video" class="video5" controls>
+			<source src="assets/qanda_2010_ep31.mp4" type="video/mp4" />
+			<track kind="captions" src="/~cgiffard/captioncrunch/video/acid.webvtt" type="text/webvtt" srclang="en" label="WebVTT Acid Test" default />
+			<track kind="captions" src="/~cgiffard/captioncrunch/video/example.webvtt" type="text/webvtt" srclang="en" label="WHATWG's WebVTT Example" />
+			<track kind="captions" src="/~cgiffard/captioncrunch/video/arduino-en.srt" type="text/srt" srclang="en" label="English Subtitles" />
+			<track kind="captions" src="/~cgiffard/captioncrunch/video/arduino-de.srt" type="text/srt" srclang="de" label="German Subtitles" />
+			<track kind="captions" src="/~cgiffard/captioncrunch/video/arduino-ja.srt" type="text/srt" srclang="ja" label="Japanese Subtitles" />
 		</video>
 		
 		<script type="text/javascript" src="js/video5.js" defer></script>

@@ -6,15 +6,19 @@
 	Share and Enjoy
 
 */
+/*global HTMLVideoElement: true, captionator:true, Sizzle:true, onEvent:true, jQuery:true, readyVideo:true, clearEvent:true, _q:true */
+/*jshint strict:true */
+/*Tab indented, tab = 4 spaces*/
 
 (function() {
-	
+	"use strict";
+
 	var Video5Wrapper = function Video5Wrapper(videoObject) {
 		// Check HTML5 video compatibility
 		if (!(HTMLVideoElement && videoObject instanceof HTMLVideoElement)) {
 			throw new Error("This object is not an instance of HTMLVideoElement, or this browser does not support HTML5 Video.");
 		}
-	
+
 		var wrapperObject = this;
 	
 		// Set up default properties for this object
@@ -47,7 +51,7 @@
 		this.secsToTimestamp = function secsToTimestamp(secondsInput) {
 			var seconds = Math.round(secondsInput);
 			var minutes = Math.floor(seconds/60);
-				minutes = minutes > 0 ? minutes > 60 ? minutes : "0" + String(minutes) : "00";
+				minutes = minutes > 0 ? minutes >= 10 ? minutes : "0" + String(minutes) : "00";
 				seconds = seconds % 60 > 0 ? seconds % 60 < 10 ? "0" + String(seconds % 60) : seconds % 60  : "00";
 		
 			return (minutes + ":" + seconds);
@@ -71,8 +75,8 @@
 			}
 		
 			return returnString;
-		}
-	
+		};
+		
 		// Create UI
 		this.createVideoUI = function createVideoUI() {
 			var videoStyles = window.getComputedStyle(this.videoObject,null);
@@ -81,30 +85,106 @@
 			this.videoObject.controls = false;
 		
 			// Begin making our own
-			this.videoID					= "video5-" + this.generateRandomID(32);
-			this.videoWidth					= parseInt(videoStyles.getPropertyValue("width").replace(/[^\d]/ig,""),10);
-			this.videoHeight 				= parseInt(videoStyles.getPropertyValue("height").replace(/[^\d]/ig,""),10);
-			this.videoContainer				= document.createElement("div");
-			this.videoContainer.id			= this.videoID;
-			this.videoUI					= document.createElement("div");
-			this.seekBar					= document.createElement("div");
-			this.videoContainer.className	= "video5-container";
-			this.videoUI.className			= "videoHud";
-			this.seekBar.className			= "seekBar";
-			this.videoContainer.style.width	= this.videoWidth + "px";
-			this.videoContainer.style.height= this.videoHeight + "px";
-			this.videoUI.style.width		= this.videoWidth + "px";
-			this.videoUI.style.height		= this.videoHeight + "px";
+			this.videoID							= "video5-" + this.generateRandomID(32);
+			this.videoWidth							= parseInt(videoStyles.getPropertyValue("width").replace(/[^\d]/ig,""),10);
+			this.videoHeight						= parseInt(videoStyles.getPropertyValue("height").replace(/[^\d]/ig,""),10);
+			this.videoContainer						= document.createElement("div");
+			this.videoContainer.id					= this.videoID;
+			this.videoUI							= document.createElement("div");
+			this.seekBar							= document.createElement("div");
+			this.videoContainer.className			= "video5-container";
+			this.videoUI.className					= "videoHud";
+			this.seekBar.className					= "seekBar";
+			this.videoContainer.style.width			= this.videoWidth + "px";
+			this.videoContainer.style.height		= this.videoHeight + "px";
+			this.videoUI.style.width				= this.videoWidth + "px";
+			this.videoUI.style.height				= this.videoHeight + "px";
+			this.videoUI.style.zIndex				= 150;
+			this.assistiveTrackSelector				= document.createElement("div");
+			this.assistiveTrackSelector.className	= "assistive-track-selector";
 		
 			this.videoObject.parentNode.insertBefore(this.videoContainer,this.videoObject);
 			this.videoContainer.appendChild(this.videoObject);
 			this.videoContainer.appendChild(this.videoUI);
 			this.videoUI.appendChild(this.seekBar);
+			this.videoUI.appendChild(this.assistiveTrackSelector);
 		
 			// ARIA
 			this.videoContainer.setAttribute("role","application");
 			this.seekBar.setAttribute("role","progressbar");
 			// more to come
+
+			// <track> & caption support
+			if (window.captionator) {
+				captionator.captionify(videoObject,null,{controlHeight:30,appendCueCanvasTo:this.videoContainer});
+
+				if (videoObject.tracks.length) {
+					var trackID = "trackselector-" + this.generateRandomID(32);
+					this.assistiveTrackSelector.textTrackUI = document.createElement("div");
+					this.assistiveTrackSelector.textTrackUILabel = document.createElement("label");
+					this.assistiveTrackSelector.textTrackSelector = document.createElement("select");
+					this.assistiveTrackSelector.textTrackUI.appendChild(this.assistiveTrackSelector.textTrackUILabel);
+					this.assistiveTrackSelector.textTrackUI.className = "assistive-selector text-track-selector off";
+					this.assistiveTrackSelector.textTrackSelector.id = trackID;
+					this.assistiveTrackSelector.textTrackUILabel.setAttribute("for",trackID);
+					this.assistiveTrackSelector.textTrackUILabel.innerHTML = "Captions: <span class='state'>OFF</span>";
+					this.assistiveTrackSelector.textTrackUI.appendChild(this.assistiveTrackSelector.textTrackSelector);
+					this.assistiveTrackSelector.appendChild(this.assistiveTrackSelector.textTrackUI);
+					this.assistiveTrackSelector.textTrackSelector.blankTrackOption = document.createElement("option");
+					this.assistiveTrackSelector.textTrackSelector.blankTrackOption.innerHTML = "No Captions/Subtitles";
+					this.assistiveTrackSelector.textTrackSelector.blankTrackOption.setAttribute("value",-1);
+					this.assistiveTrackSelector.textTrackSelector.appendChild(this.assistiveTrackSelector.textTrackSelector.blankTrackOption);
+
+					for (var index in videoObject.tracks) {
+						if (videoObject.tracks.hasOwnProperty(index)) {
+							var tmpOption = document.createElement("option");
+								tmpOption.setAttribute("value",index);
+								tmpOption.setAttribute("mode",videoObject.tracks[index].label);
+								tmpOption.setAttribute("selected",(videoObject.tracks[index].mode===2?"selected":""));
+								tmpOption.track = videoObject.tracks[index];
+								tmpOption.innerHTML = videoObject.tracks[index].label + " (" + videoObject.tracks[index].language + ")";
+							
+							this.assistiveTrackSelector.textTrackSelector.appendChild(tmpOption);
+
+							if (videoObject.tracks[index].mode === 2) {
+								this.assistiveTrackSelector.textTrackUILabel.innerHTML = "Captions: <span class='state'>ON, " + tmpOption.track.language + "</span>";
+								this.assistiveTrackSelector.textTrackUI.className =
+									this.assistiveTrackSelector.textTrackUI.className.replace(/\b(off)\b/i,"on");
+							}
+						}
+					}
+
+					onEvent(this.assistiveTrackSelector.textTrackSelector,"change",function(eventData) {
+						var currentOption = _q("option",wrapperObject.assistiveTrackSelector.textTrackSelector)[wrapperObject.assistiveTrackSelector.textTrackSelector.selectedIndex];
+						for (var index in videoObject.tracks) {
+							if (videoObject.tracks.hasOwnProperty(index)) {
+								videoObject.tracks[index].mode = 0;
+							}
+						}
+
+						if (parseInt(currentOption.getAttribute("value"),10) >= 0) {
+							currentOption.track.mode = 2;
+
+							wrapperObject.assistiveTrackSelector.textTrackUILabel.innerHTML = "Captions: <span class='state'>ON, " + currentOption.track.language + "</span>";
+							wrapperObject.assistiveTrackSelector.textTrackUI.className =
+								wrapperObject.assistiveTrackSelector.textTrackUI.className.replace(/\b(off)\b/i,"on");
+						} else {
+							wrapperObject.assistiveTrackSelector.textTrackUILabel.innerHTML = "Captions: <span class='state'>OFF</span>";
+							wrapperObject.assistiveTrackSelector.textTrackUI.className =
+								wrapperObject.assistiveTrackSelector.textTrackUI.className.replace(/\b(on)\b/i,"off");
+						}
+					});
+
+					onEvent(this.assistiveTrackSelector.textTrackSelector,"focus",function(eventData) {
+						wrapperObject.assistiveTrackSelector.textTrackUI.className += " focus";
+					});
+
+					onEvent(this.assistiveTrackSelector.textTrackSelector,"blur",function(eventData) {
+						wrapperObject.assistiveTrackSelector.textTrackUI.className =
+							wrapperObject.assistiveTrackSelector.textTrackUI.className.replace(/(\s*\bfocus\b)/i,"");
+					});
+				}
+			}
 		
 			this.seekBar.innerHTML =
 				'<button class="play"><span>Play</span></button>' +
@@ -133,6 +213,7 @@
 			onEvent(this.seekBarRangeControl,"change",this.rangeUpdate);
 			onEvent(this.seekBarRangeControl,"mousedown",this.startSeek);
 			onEvent(this.seekBarRangeControl,"mouseup",this.endSeek);
+			onEvent(this.seekBarRangeControl,"keydown",this.rangeKeyPress);
 			onEvent(this.seekBarThumbControl,"mousedown",this.startThumbDrag);
 			onEvent(this.videoObject,"timeupdate",this.timeUpdate);
 			onEvent(this.volumeDisclosure,"click",this.displayVolumeControl);
@@ -148,15 +229,17 @@
 			// Sets up the width of the range input based on calculated button widths and total width of the toolbar
 			var combinedWidth = 0;
 			var elementsToCheck = [this.playPauseButton,this.fullscreenButton,this.volumeDisclosure,this.timeRemainingLabel];
-			for (index in elementsToCheck) {
-				var currentElement = elementsToCheck[index];
-				var currentComputedWidth =  parseInt((window.getComputedStyle(currentElement,null).getPropertyValue("width")||"0px").replace(/[^\d]/g,""),10);
-					currentComputedWidth += parseInt((window.getComputedStyle(currentElement,null).getPropertyValue("marginLeft")||"0px").replace(/[^\d]/g,""),10);
-					currentComputedWidth += parseInt((window.getComputedStyle(currentElement,null).getPropertyValue("marginRight")||"0px").replace(/[^\d]/g,""),10);
-					currentComputedWidth += parseInt((window.getComputedStyle(currentElement,null).getPropertyValue("paddingLeft")||"0px").replace(/[^\d]/g,""),10);
-					currentComputedWidth += parseInt((window.getComputedStyle(currentElement,null).getPropertyValue("paddingRight")||"0px").replace(/[^\d]/g,""),10);
-			
-				combinedWidth += currentComputedWidth;
+			for (var index in elementsToCheck) {
+				if (elementsToCheck.hasOwnProperty(index)) {
+					var currentElement = elementsToCheck[index];
+					var currentComputedWidth =  parseInt((window.getComputedStyle(currentElement,null).getPropertyValue("width")||"0px").replace(/[^\d]/g,""),10);
+						currentComputedWidth += parseInt((window.getComputedStyle(currentElement,null).getPropertyValue("marginLeft")||"0px").replace(/[^\d]/g,""),10);
+						currentComputedWidth += parseInt((window.getComputedStyle(currentElement,null).getPropertyValue("marginRight")||"0px").replace(/[^\d]/g,""),10);
+						currentComputedWidth += parseInt((window.getComputedStyle(currentElement,null).getPropertyValue("paddingLeft")||"0px").replace(/[^\d]/g,""),10);
+						currentComputedWidth += parseInt((window.getComputedStyle(currentElement,null).getPropertyValue("paddingRight")||"0px").replace(/[^\d]/g,""),10);
+				
+					combinedWidth += currentComputedWidth;
+				}
 			}
 		
 			this.seekBarThumbControl.style.top = this.seekBarRangeControl.offsetTop + "px";
@@ -172,7 +255,7 @@
 			do {
 				this.rangeOffsetX += obj.offsetLeft;
 				this.rangeOffsetY += obj.offsetTop;
-			} while (obj = obj.offsetParent);
+			} while ((obj = obj.offsetParent));
 		};
 	
 		this.updateTimeDisplay = function updateTimeDisplay() {
@@ -238,7 +321,7 @@
 		};
 	
 		this.timeUpdate = function timeUpdate(eventData) {
-			if (!wrapperObject.seeking && !wrapperObject.videoObject.paused) {
+			if (!wrapperObject.seeking) {
 				wrapperObject.currentTime = wrapperObject.videoObject.currentTime;
 				wrapperObject.seekBarRangeControl.value = (wrapperObject.currentTime / wrapperObject.videoObject.duration) * 100;
 				wrapperObject.updateTimeDisplay();
@@ -284,7 +367,7 @@
 	
 		this.startSeek = function startSeek() {
 			wrapperObject.seeking = true;
-			if (wrapperObject.videoWasPlaying = (!wrapperObject.videoObject.paused && !wrapperObject.videoObject.ended)) {
+			if ((wrapperObject.videoWasPlaying = (!wrapperObject.videoObject.paused && !wrapperObject.videoObject.ended))) {
 				wrapperObject.playPauseButton.getElementsByTagName("span")[0].innerHTML = "Play";
 				wrapperObject.videoContainer.className = wrapperObject.videoContainer.className.replace(/\s*playing\b/i,"");
 				wrapperObject.videoObject.pause();
@@ -310,6 +393,36 @@
 			}
 			wrapperObject.updateTimeDisplay();
 		};
+
+		this.rangeKeyPress = function rangeKeyPress(eventData) {
+			eventData = eventData ? eventData : window.event;
+
+			if ((eventData.keyCode >= 37 && eventData.keyCode <= 40) || eventData.keyCode === 32) {
+				eventData.cancelBubble = true
+
+				if (eventData.preventDefault) {
+					eventData.preventDefault();
+				}
+
+				if (eventData.stopPropagation) {
+					eventData.stopPropagation();
+				}
+			}
+
+			var newTime = 0;
+			var seekDistance = wrapperObject.videoObject.duration * 0.05;
+				seekDistance = seekDistance <= 20 ? seekDistance : 20;
+			
+			if (eventData.keyCode === 37 || eventData.keyCode === 40) {
+				newTime = wrapperObject.videoObject.currentTime - seekDistance;
+				wrapperObject.videoObject.currentTime = newTime > 0 ? newTime : 0;
+			} else if (eventData.keyCode === 38 || eventData.keyCode === 39) {
+				newTime = wrapperObject.videoObject.currentTime + seekDistance;
+				wrapperObject.videoObject.currentTime = newTime < wrapperObject.videoObject.duration ? newTime : wrapperObject.videoObject.duration;
+			} else if (eventData.keyCode === 32) {
+				wrapperObject.playPause();
+			}
+		};
 	
 		this.displayVolumeControl = function displayVolumeControl() {
 			if (!wrapperObject.volumeControlVisible) {
@@ -323,7 +436,7 @@
 					eventData.cancelBubble = true;
 					eventData.preventDefault();
 					eventData.stopPropagation();
-					wrapperObject.seekBarVolumeControl
+					// wrapperObject.seekBarVolumeControl
 				});
 			} else {
 				wrapperObject.hideVolumeControl();
@@ -347,7 +460,7 @@
 
 	var _q = function _q(input,search) {
 		search = search instanceof HTMLElement ? search : document;
-	
+
 		if (search.querySelectorAll) {
 			return search.querySelectorAll(input);
 		} else {
@@ -357,11 +470,11 @@
 				if ($) {
 					return Array.prototype.slice.call($(search).find(input),0);
 				} else {
-					throw new Error("Video5.js relies on Sizzle.js in browsers which do not support querySelectorAll - but it wasn't found.")
+					throw new Error("Video5.js relies on Sizzle.js in browsers which do not support querySelectorAll - but it wasn't found.");
 				}
 			}
 		}
-	}
+	};
 	
 	var onEvent = function onEvent(element,event,callback) {
 		if (element.addEventListener) {
@@ -371,11 +484,11 @@
 			if (element.attachEvent) {
 				return element.attachEvent(event,callback);
 			} else {
-				element[event] = callback;
-				return element[event];
+				element["on"+event] = callback;
+				return element["on"+event];
 			}
 		}
-	}
+	};
 	
 	var clearEvent = function clearEvent(element,event,pointer) {
 		if (element.removeEventListener) {
@@ -384,21 +497,33 @@
 			if (element.detachEvent) {
 				element.detachEvent(event,pointer);
 			} else {
-				element[event] = null;
+				element["on"+event] = null;
 			}
 		}
-	}
+	};
 	
 	var readyVideo = function readyVideo() {	
 		var video5Objects = Array.prototype.slice.call(_q("video.video5"),0);
-		for (index in video5Objects) {
+		for (var index in video5Objects) {
 			if (video5Objects.hasOwnProperty(index)) {
 				video5Objects[index] = new Video5Wrapper(video5Objects[index]);
 				video5Objects[index].createVideoUI();
 			}
 		}
-	}
-	
-	onEvent(window,"load",readyVideo);
-	
+	};
+
+	var videoReadied = false;
+	onEvent(document,"readystatechange",function(eventData) {
+		if (document.readyState === "complete") {
+			videoReadied = true;
+			readyVideo();
+		}
+	});
+
+	onEvent(window,"load",function(eventData) {
+		if (!videoReadied) {
+			readyVideo();
+		}
+	});
+
 })();

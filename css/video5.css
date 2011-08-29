@@ -317,6 +317,26 @@
 				outline: 0px !important;
 			}
 			
+			.seekBar .loadprogress {
+				display: block;
+				position: absolute;
+				width: 191.5px;
+				height: 12px;
+				margin-top: 7px;
+				-webkit-border-radius: 6px;
+				-moz-border-radius: 6px;
+				-o-border-radius: 6px;
+				border-radius: 6px;
+				overflow:hidden;
+			}
+
+				.seekBar .loadprogress canvas {
+					-webkit-border-radius: 6px;
+					-moz-border-radius: 6px;
+					-o-border-radius: 6px;
+					border-radius: 6px;
+				}
+
 			.seekBar .playprogress {
 				display: block;
 				height: 14px;
@@ -361,6 +381,22 @@
 										rgba(0,0,0,0.36) 0px 2px 2px;
 					
 					z-index:20;
+				}
+
+				input:focus ~ .thumb {
+					outline: solid green 6px;
+					-webkit-box-shadow: inset rgba(255,255,255,0.4) 1px 1px 0px,
+										rgba(0,0,0,0.36) 0px 2px 2px,
+										rgb(134,188,235) 0px 0px 1px 2px;
+					-moz-box-shadow:	inset rgba(255,255,255,0.4) 1px 1px 0px,
+										rgba(0,0,0,0.36) 0px 2px 2px,
+										rgb(134,188,235) 0px 0px 1px 2px;
+					-o-box-shadow:		inset rgba(255,255,255,0.4) 1px 1px 0px,
+										rgba(0,0,0,0.36) 0px 2px 2px,
+										rgb(134,188,235) 0px 0px 1px 2px;
+					box-shadow:			inset rgba(255,255,255,0.4) 1px 1px 0px,
+										rgba(0,0,0,0.36) 0px 2px 2px,
+										rgb(134,188,235) 0px 0px 1px 2px;
 				}
 				
 			.seekBar label.elapsed {
@@ -408,7 +444,7 @@
 				overflow: visible !important;
 			}
 			
-				.seekBar details.open *, .seekBar .details.open, .seekBar .details.hover {
+				.seekBar details.open *, .seekBar .details.open *, .seekBar .details.open, .seekBar .details.hover {
 					opacity: 1 !important;
 				}
 			
@@ -457,13 +493,19 @@
 				.seekBar details input.volume:focus,
 				.seekBar .details input.volume:focus {
 					-webkit-box-shadow: inset #141414 -1px -1px 0px,
-										inset #666666 0px 1px 0px !important;
+										inset #666666 0px 1px 0px,
+										rgb(134,188,235) 0px 0px 1px 2px !important;
 					-moz-box-shadow:	inset #141414 -1px -1px 0px,
-										inset #666666 0px 1px 0px !important;
+										inset #666666 0px 1px 0px,
+										rgb(134,188,235) 0px 0px 1px 2px !important;
 					-o-box-shadow:		inset #141414 -1px -1px 0px,
-										inset #666666 0px 1px 0px !important;
+										inset #666666 0px 1px 0px,
+										rgb(134,188,235) 0px 0px 1px 2px !important;
 					box-shadow:			inset #141414 -1px -1px 0px,
-										inset #666666 0px 1px 0px !important;
+										inset #666666 0px 1px 0px,
+										rgb(134,188,235) 0px 0px 1px 2px !important;
+					
+					border: solid rgba(0,0,0,0.6) 3px !important;
 					outline: none !important;
 				}
 				

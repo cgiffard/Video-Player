@@ -3,7 +3,7 @@ TODO:
 -> Get volume control working
 -> Check compatibility across HTML5 Video capable browsers
 		-> Fix opera range rendering?
--> Fix keyboard accessibility for range controls so space pauses video, left/up cursor and right/down cursor keys advance/rewind video significantly
+-> // FIXED // Fix keyboard accessibility for range controls so space pauses video, left/up cursor and right/down cursor keys advance/rewind video significantly
 -> Add another keyboard accessibility fix so that controls fade in when a keyboard event within that video container is fired, and set a 5-10sec timer to fade out.
 -> Double check ARIA roles etc
 -> Build a flash front-end

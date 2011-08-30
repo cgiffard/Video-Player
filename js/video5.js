@@ -43,9 +43,12 @@
 		this.lastMousePosY			= 0;
 		this.rangeOffsetX			= 0;
 		this.rangeOffsetY			= 0;
+		this.volRangeOffsetX		= 0;
+		this.volRangeOffsetY		= 0;
 		this.seekBarRangeWidth		= 0;
 		this.thumbPositionX			= 0;
 		this.volumeControlVisible	= false;
+		this.controlVisibilityTimer	= null;
 	
 		// General support functions
 		this.secsToTimestamp = function secsToTimestamp(secondsInput) {
@@ -169,9 +172,12 @@
 						var tmpOption = document.createElement("option");
 							tmpOption.setAttribute("value",cueIndex);
 							tmpOption.setAttribute("title",chapterTitle);
-							tmpOption.setAttribute("selected",(chapter.active?"selected":""));
 							tmpOption.chapter = chapter;
-							tmpOption.innerHTML = (cueIndex+1) + ": " + chapterTitle;
+							tmpOption.innerHTML = (cueIndex+1) + ". " + chapterTitle;
+
+							if (chapter.active) {
+								tmpOption.setAttribute("selected","selected");
+							}
 						
 						trackSelector.appendChild(tmpOption);
 
@@ -288,11 +294,6 @@
 			this.videoContainer.appendChild(this.videoUI);
 			this.videoUI.appendChild(this.seekBar);
 			this.videoUI.appendChild(this.assistiveTrackSelector);
-		
-			// ARIA
-			this.videoContainer.setAttribute("role","application");
-			this.seekBar.setAttribute("role","progressbar");
-			// more to come
 
 			// <track> & caption support
 			if (window.captionator) {
@@ -335,6 +336,7 @@
 				'<input type="range" min="0" max="100" step="0.0001" value="0" id="' + this.videoID + '-range" class="playprogress bevelled" title="Video Seek Bar" />' +
 				'<label for="' + this.videoID + '-range" class="remaining" title="Time Remaining"><span>Time remaining:</span><time>00:00</time></label>' +
 				'<div class="details"><summary><label for="' + this.videoID + '-volume"><span>Audio Volume</span></label></summary>' +
+				'<div class="thumb vertical" id="' + this.videoID + '-volume-thumb">&nbsp;</div>' +
 				'<input type="range" min="0" max="20" value="20" id="' + this.videoID + '-volume" class="volume bevelled" title="Audio Volume" /></div>' +
 				'<button class="fullscreen" /><span>Fullscreen</span></label>';
 		
@@ -350,6 +352,22 @@
 			this.seekBarRangeControl	= document.getElementById(this.videoID + "-range");
 			this.seekBarThumbControl	= document.getElementById(this.videoID + "-thumb");
 			this.seekBarVolumeControl	= document.getElementById(this.videoID + "-volume");
+			this.seekBarVolumeThumb		= document.getElementById(this.videoID + "-volume-thumb");
+
+			// ARIA ------------------------------------------------
+			// Roles
+			this.videoContainer.setAttribute("role","application");
+			this.seekBar.setAttribute("role","toolbar");
+			this.playPauseButton.setAttribute("role","button");
+			this.fullscreenButton.setAttribute("role","button");
+			this.seekBarRangeControl.setAttribute("role","slider");
+			this.seekBarVolumeControl.setAttribute("role","slider");
+			// Control relationships
+			this.seekBarVolumeControl.setAttribute("aria-controls",this.videoID);
+			this.seekBarRangeControl.setAttribute("aria-controls",this.videoID);
+			this.playPauseButton.setAttribute("aria-controls",this.videoID);
+			this.fullscreenButton.setAttribute("aria-controls",this.videoID);
+			// more to come
 		
 			// Attach Events
 			onEvent(this.playPauseButton,"click",this.playPause);
@@ -360,6 +378,7 @@
 			onEvent(this.seekBarRangeControl,"keydown",this.rangeKeyPress);
 			onEvent(this.seekBarThumbControl,"mousedown",this.startThumbDrag);
 			onEvent(this.videoObject,"timeupdate",this.timeUpdate);
+			onEvent(this.videoObject,"volumechange",this.updateVolumeDisplay);
 			onEvent(this.volumeDisclosure,"mousedown",this.displayVolumeControl);
 			onEvent(this.seekBarVolumeControl,"focus",this.displayVolumeControl);
 			onEvent(this.seekBarVolumeControl,"blur",this.displayVolumeControl);
@@ -367,15 +386,23 @@
 			onEvent(this.videoObject,"progress",this.updateLoadDisplay);
 			onEvent(this.seekBarVolumeControl,"mousedown",this.volumeRangeClick);
 			onEvent(this.seekBarVolumeControl,"mouseup",this.volumeRangeClick);
+			onEvent(this.seekBarVolumeControl,"keydown",this.volumeKeyPress);
+			onEvent(this.seekBarVolumeThumb,"mousedown",this.startVolumeThumbDrag);
+			onEvent(this.videoUI,"keydown",this.captureGeneralKeypress);
 			
 			// Update positioning
 			this.updateUIPositioning();
+			onEvent(window,"resize",this.updateUIPositioning);
+
+			if (window.localStorage && window.localStorage.getItem instanceof Function) {
+				wrapperObject.videoObject.volume = localStorage.getItem("video-volume");
+			}
 		};
 		
 		this.updateUIPositioning = function updateUIPositioning() {
 			// Sets up the width of the range input based on calculated button widths and total width of the toolbar
 			var combinedWidth = 0;
-			var elementsToCheck = [this.playPauseButton,this.fullscreenButton,this.volumeDisclosure,this.timeRemainingLabel];
+			var elementsToCheck = [wrapperObject.playPauseButton,wrapperObject.fullscreenButton,wrapperObject.volumeDisclosure,wrapperObject.timeRemainingLabel];
 			for (var index in elementsToCheck) {
 				if (elementsToCheck.hasOwnProperty(index)) {
 					var currentElement = elementsToCheck[index];
@@ -389,25 +416,35 @@
 				}
 			}
 		
-			this.seekBarThumbControl.style.top = this.seekBarRangeControl.offsetTop + "px";
-			this.seekBarThumbControl.style.left = (this.seekBarRangeControl.offsetLeft + 1) + "px"; // include border
+			wrapperObject.seekBarThumbControl.style.top = wrapperObject.seekBarRangeControl.offsetTop + "px";
+			wrapperObject.seekBarThumbControl.style.left = (wrapperObject.seekBarRangeControl.offsetLeft + 1) + "px"; // include border
 		
-			var seekBarWidth = parseInt((window.getComputedStyle(this.seekBar,null).getPropertyValue("width")||"0px").replace(/[^\d]/g,""),10);
-			this.seekBarRangeControl.style.width = ((seekBarWidth-combinedWidth)-6) + "px";
-			this.seekBarRangeWidth = ((seekBarWidth-combinedWidth)-6);
-			this.updateTimeDisplay();
+			var seekBarWidth = parseInt((window.getComputedStyle(wrapperObject.seekBar,null).getPropertyValue("width")||"0px").replace(/[^\d]/g,""),10);
+			wrapperObject.seekBarRangeControl.style.width = ((seekBarWidth-combinedWidth)-6) + "px";
+			wrapperObject.seekBarRangeWidth = ((seekBarWidth-combinedWidth)-6);
+			wrapperObject.updateTimeDisplay();
 			
 			// Load progress indicator
-			this.loadProgressIndicator.style.marginLeft = (this.seekBarRangeControl.offsetLeft+1) + "px";
-			this.loadProgressIndicator.style.width = (this.seekBarRangeWidth-2) + "px";
-			this.loadProgressCanvas.height = 12;
-			this.loadProgressCanvas.width = this.seekBarRangeWidth-2;
+			wrapperObject.loadProgressIndicator.style.marginLeft = (wrapperObject.seekBarRangeControl.offsetLeft+1) + "px";
+			wrapperObject.loadProgressIndicator.style.width = (wrapperObject.seekBarRangeWidth-2) + "px";
+			wrapperObject.loadProgressCanvas.height = 12;
+			wrapperObject.loadProgressCanvas.width = wrapperObject.seekBarRangeWidth-2;
+
+			wrapperObject.seekBarVolumeThumb.style.marginTop = ((wrapperObject.videoObject.volume * 56)*-1) + "px";
+
 
 			// Get offset of range control
-			var obj = this.seekBarRangeControl;
+			var obj = wrapperObject.seekBarRangeControl;
 			do {
-				this.rangeOffsetX += obj.offsetLeft;
-				this.rangeOffsetY += obj.offsetTop;
+				wrapperObject.rangeOffsetX += obj.offsetLeft;
+				wrapperObject.rangeOffsetY += obj.offsetTop;
+			} while ((obj = obj.offsetParent));
+
+			// Get offset of volume control
+			obj = wrapperObject.seekBarVolumeControl;
+			do {
+				wrapperObject.volRangeOffsetX += obj.offsetLeft;
+				wrapperObject.volRangeOffsetY += obj.offsetTop;
 			} while ((obj = obj.offsetParent));
 		};
 
@@ -457,12 +494,21 @@
 				wrapperObject.videoObject.pause();
 				wrapperObject.playPauseButton.getElementsByTagName("span")[0].innerHTML = "Play";
 				wrapperObject.videoContainer.className = wrapperObject.videoContainer.className.replace(/\s*playing\b/i,"");
+				window.clearTimeout(wrapperObject.controlVisibilityTimer);
+				wrapperObject.controlVisibilityTimer = null;
 			} else {
 				wrapperObject.videoObject.play();
 				wrapperObject.playPauseButton.getElementsByTagName("span")[0].innerHTML = "Pause";
 			
 				if (!wrapperObject.videoContainer.className.match(/\bplaying\b/i)) {
 					wrapperObject.videoContainer.className = wrapperObject.videoContainer.className + " playing";
+				}
+
+				if (!wrapperObject.videoContainer.className.match(/\bcontrolsvisible\b/i)) {
+					wrapperObject.videoContainer.className = wrapperObject.videoContainer.className + " controlsvisible";
+					wrapperObject.controlVisibilityTimer = window.setTimeout(function() {
+						wrapperObject.videoContainer.className = wrapperObject.videoContainer.className.replace(/\s*controlsvisible\b/i,"");
+					},5000);
 				}
 			}
 		};
@@ -495,8 +541,12 @@
 					wrapperObject.videoContainer.style.height = wrapperObject.videoHeight + "px";
 					wrapperObject.videoContainer.style.backgroundColor = "black";
 				}
-			
+				
 				wrapperObject.updateUIPositioning();
+				if (captionator) {
+					wrapperObject.videoObject._captionator_dirtyBit = true;
+					captionator.rebuildCaptions(wrapperObject.videoObject);
+				}
 			}
 		};
 	
@@ -512,16 +562,16 @@
 			wrapperObject.lastMousePosX = eventData.pageX;
 			wrapperObject.lastMousePosY = eventData.pageY;
 			wrapperObject.startSeek();
-			var thumbPosition = 0;
+
+			var progressBarComputedWidth = wrapperObject.seekBarRangeControl.offsetWidth - 13; // Take off 13 for the width of the thumb (inc. borders)
+			var thumbPosition = wrapperObject.thumbPositionX || 0;
 		
 			var tmpWindowMousemoveEvent = onEvent(window,"mousemove",function(mouseEventData) {
 				var currentPageX = mouseEventData.pageX;
 				var movementDelta = currentPageX - wrapperObject.lastMousePosX;
-			
-				var progressBarComputedWidth = window.getComputedStyle(wrapperObject.seekBarRangeControl,null).getPropertyValue("width");
-					progressBarComputedWidth = parseInt(progressBarComputedWidth.replace(/[^\d]/g,""),10) - 13; // Take off 13 for the width of the thumb (inc. borders)
-					thumbPosition = movementDelta + wrapperObject.thumbPositionX > 0 ? movementDelta + wrapperObject.thumbPositionX : 0;
-					thumbPosition = thumbPosition < progressBarComputedWidth ? thumbPosition : progressBarComputedWidth;
+
+				thumbPosition = movementDelta + wrapperObject.thumbPositionX > 0 ? movementDelta + wrapperObject.thumbPositionX : 0;
+				thumbPosition = thumbPosition < progressBarComputedWidth ? thumbPosition : progressBarComputedWidth;
 				
 				var thumbPositionPercentage = thumbPosition / progressBarComputedWidth;
 			
@@ -536,12 +586,11 @@
 			});
 		
 			var tmpWindowMouseupEvent = onEvent(window,"mouseup",function(mouseEventData) {
-				clearEvent(window,"mouseup",tmpWindowMouseupEvent);
-				clearEvent(window,"mousemove",tmpWindowMousemoveEvent);
-				wrapperObject.video5_thumbMouseEvent = null;
+				clearEvent(tmpWindowMouseupEvent);
+				clearEvent(tmpWindowMousemoveEvent);
 				wrapperObject.endSeek();
-				wrapperObject.lastMousePosX = eventData.pageX;
-				wrapperObject.lastMousePosY = eventData.pageY;
+				wrapperObject.lastMousePosX = mouseEventData.pageX;
+				wrapperObject.lastMousePosY = mouseEventData.pageY;
 				wrapperObject.thumbPositionX = thumbPosition;
 			});
 		};
@@ -576,18 +625,8 @@
 		};
 
 		this.rangeKeyPress = function rangeKeyPress(eventData) {
-			eventData = eventData ? eventData : window.event;
-
 			if ((eventData.keyCode >= 37 && eventData.keyCode <= 40) || eventData.keyCode === 32) {
-				eventData.cancelBubble = true
-
-				if (eventData.preventDefault) {
-					eventData.preventDefault();
-				}
-
-				if (eventData.stopPropagation) {
-					eventData.stopPropagation();
-				}
+				captureEvent(eventData);
 			}
 
 			var newTime = 0;
@@ -603,27 +642,41 @@
 			} else if (eventData.keyCode === 32) {
 				wrapperObject.playPause();
 			}
+
+			wrapperObject.captureGeneralKeypress(eventData);
 		};
 		
 		this.volumeRangeClick = function volumeRangeClick(eventData) {
-			eventData.cancelBubble = true;
-			eventData.preventDefault();
-			eventData.stopPropagation();
+			captureEvent(eventData);
 
-			return false;
+			var volumeSliderWidth = parseInt(wrapperObject.seekBarVolumeControl.offsetWidth,10)-20; // Take off 20 for the width of the thumb (inc. borders)
+			var thumbPosition = eventData.pageY - (wrapperObject.volRangeOffsetY - (volumeSliderWidth+40));
+			var thumbPositionPercentage = thumbPosition / volumeSliderWidth;
+
+			wrapperObject.seekBarVolumeThumb.style.marginTop = ((volumeSliderWidth*-1) + thumbPosition) + "px";
+			wrapperObject.videoObject.volume = 1 - thumbPositionPercentage;
+			wrapperObject.seekBarVolumeControl.value = ((1-thumbPositionPercentage) * 20);
+		};
+
+		this.updateVolumeDisplay = function updateVolumeDisplay(eventData) {
+			wrapperObject.seekBarVolumeThumb.style.marginTop = ((wrapperObject.videoObject.volume * 56)*-1) + "px";
+			wrapperObject.volThumbPositionY = ((wrapperObject.videoObject.volume * 56)*-1) + "px";
+
+			if (window.localStorage && window.localStorage.setItem instanceof Function) {
+				localStorage.setItem("video-volume",wrapperObject.videoObject.volume);
+			}
 		};
 
 		this.displayVolumeControl = function displayVolumeControl(eventData) {
 			if (eventData.target === wrapperObject.volumeDisclosure) {
-				eventData.preventDefault();
-				eventData.cancelBubble = true;
-				eventData.stopPropagation();
+				captureEvent(eventData);
 			}
 
 			if (!wrapperObject.volumeControlVisible) {
 				wrapperObject.volumeDisclosure.setAttribute("open","open");
 				wrapperObject.volumeDisclosure.className += " open";
 				wrapperObject.seekBarVolumeControl.focus();
+				wrapperObject.seekBarVolumeControl.style.opacity = 0.99 + (Math.random()/100);
 				wrapperObject.volumeControlVisible = true;
 			} else {
 				if (eventData.type === "blur" || (eventData.target === wrapperObject.volumeDisclosure && eventData.type === "mousedown")) {
@@ -640,9 +693,85 @@
 				wrapperObject.volumeControlVisible = false;
 			}
 		};
+
+		this.volumeKeyPress = function volumeKeyPress(eventData) {
+			if ((eventData.keyCode >= 37 && eventData.keyCode <= 40) || eventData.keyCode === 32) {
+				captureEvent(eventData);
+			}
+			
+			if (eventData.keyCode === 37 || eventData.keyCode === 40) {
+				if (wrapperObject.seekBarVolumeControl.value > wrapperObject.seekBarVolumeControl.min) {
+					wrapperObject.seekBarVolumeControl.value -= 1;
+					wrapperObject.updateVolume();
+				}
+			} else if (eventData.keyCode === 38 || eventData.keyCode === 39) {
+				if (parseInt(wrapperObject.seekBarVolumeControl.value,10) < parseInt(wrapperObject.seekBarVolumeControl.max,10)) {
+					wrapperObject.seekBarVolumeControl.value = parseInt(wrapperObject.seekBarVolumeControl.value,10) + 1;
+					wrapperObject.updateVolume();
+				}
+			} else if (eventData.keyCode === 32) {
+				wrapperObject.playPause();
+			}
+
+			wrapperObject.captureGeneralKeypress(eventData);
+		};
+
+		this.startVolumeThumbDrag = function startVolumeThumbDrag(eventData) {
+			captureEvent(eventData);
+			wrapperObject.lastMousePosX = eventData.pageX;
+			wrapperObject.lastMousePosY = eventData.pageY;
+			var thumbPosition = 0;
+
+			var volumeSliderWidth = parseInt(wrapperObject.seekBarVolumeControl.offsetWidth,10)-20; // Take off 20 for the width of the thumb (inc. borders)
+			var oldPosition = (1 - wrapperObject.videoObject.volume) * volumeSliderWidth; // Calculate the current slider thumb position
+			
+			var tmpWindowMousemoveEvent = onEvent(window,"mousemove",function(mouseEventData) {
+				var currentPageY = mouseEventData.pageY;
+				var movementDelta = currentPageY - wrapperObject.lastMousePosY;
+				
+				thumbPosition = movementDelta + oldPosition > 0 ? movementDelta + oldPosition : 0;
+				thumbPosition = thumbPosition < volumeSliderWidth ? thumbPosition : volumeSliderWidth;
+				
+				var thumbPositionPercentage = thumbPosition / volumeSliderWidth;
+
+				wrapperObject.seekBarVolumeThumb.style.marginTop = ((volumeSliderWidth*-1) + thumbPosition) + "px";
+				wrapperObject.videoObject.volume = 1 - thumbPositionPercentage; // Invert volume value (as the slider is reversed by the transform)
+				wrapperObject.seekBarVolumeControl.value = ((1-thumbPositionPercentage) * 20);
+			});
+			
+			var tmpWindowMouseupEvent = onEvent(window,"mouseup",function(mouseEventData) {
+				clearEvent(tmpWindowMouseupEvent);
+				clearEvent(tmpWindowMousemoveEvent);
+				wrapperObject.volThumbPositionY = thumbPosition;
+				wrapperObject.lastMousePosX = mouseEventData.pageX;
+				wrapperObject.lastMousePosY = mouseEventData.pageY;
+			});
+
+			return false;
+		};
 		
 		this.updateVolume = function udpateVolume(eventData) {
 			wrapperObject.videoObject.volume = wrapperObject.seekBarVolumeControl.value/20;
+			wrapperObject.seekBarVolumeThumb.style.marginTop = ((wrapperObject.videoObject.volume * 56)*-1) + "px";
+			wrapperObject.volThumbPositionY = ((wrapperObject.videoObject.volume * 56)*-1) + "px";
+
+			if (window.localStorage && window.localStorage.setItem instanceof Function) {
+				localStorage.setItem("video-volume",wrapperObject.videoObject.volume);
+			}
+		};
+
+		this.captureGeneralKeypress = function captureGeneralKeypress(eventData) {
+			// captureEvent(eventData);
+			if (!wrapperObject.videoObject.paused) {
+				if (!wrapperObject.videoContainer.className.match(/\bcontrolsvisible\b/i)) {
+					wrapperObject.videoContainer.className = wrapperObject.videoContainer.className + " controlsvisible";
+				}
+				
+				window.clearTimeout(wrapperObject.controlVisibilityTimer);
+				wrapperObject.controlVisibilityTimer = window.setTimeout(function() {
+					wrapperObject.videoContainer.className = wrapperObject.videoContainer.className.replace(/\s*controlsvisible\b/i,"");
+				},5000);
+			}
 		};
 	};
 
@@ -665,28 +794,44 @@
 	};
 	
 	var onEvent = function onEvent(element,event,callback) {
+		var wrappedCallback = function(eventData) {
+			eventData = eventData ? eventData : window.event;
+			callback(eventData);
+		};
+
+		var pointer = null;
 		if (element.addEventListener) {
-			element.addEventListener(event,callback,false);
-			return callback;
+			element.addEventListener(event,wrappedCallback,false);
+			pointer = wrappedCallback;
 		} else {
 			if (element.attachEvent) {
-				return element.attachEvent(event,callback);
+				pointer = element.attachEvent(event,wrappedCallback);
 			} else {
-				element["on"+event] = callback;
-				return element["on"+event];
+				element["on"+event] = wrappedCallback;
+				pointer = wrappedCallback;
 			}
+		}
+
+		return {
+			"element": element,
+			"event": event,
+			"pointer": pointer
 		}
 	};
 	
-	var clearEvent = function clearEvent(element,event,pointer) {
-		if (element.removeEventListener) {
-			element.removeEventListener(event,pointer,false);
-		} else {
-			if (element.detachEvent) {
-				element.detachEvent(event,pointer);
+	var clearEvent = function clearEvent(eventObject) {
+		if (eventObject instanceof Object && eventObject.element && eventObject.event && eventObject.pointer) {
+			if (eventObject.element.removeEventListener) {
+				eventObject.element.removeEventListener(eventObject.event,eventObject.pointer,false);
 			} else {
-				element["on"+event] = null;
+				if (eventObject.element.detachEvent) {
+					eventObject.element.detachEvent(eventObject.event,eventObject.pointer);
+				} else {
+					eventObject.element["on"+eventObject.event] = null;
+				}
 			}
+		} else {
+			throw new Error("Not an event object!");
 		}
 	};
 	
@@ -699,6 +844,18 @@
 			}
 		}
 	};
+
+	var captureEvent = function captureEvent(eventData) {
+		eventData.cancelBubble = true;
+
+		if (eventData.preventDefault) {
+			eventData.preventDefault();
+		}
+
+		if (eventData.stopPropagation) {
+			eventData.stopPropagation();
+		}
+	}
 
 	var videoReadied = false;
 	onEvent(document,"readystatechange",function(eventData) {

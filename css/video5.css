@@ -40,6 +40,7 @@
 
 	.video5-container * {
 		cursor: default !important;
+		-webkit-font-smoothing: antialiased;
 	}
 
 	.videoHud {
@@ -109,7 +110,12 @@
 					width: 100%;
 					height: 100%;
 					opacity: 0;
+					color: black !important;
 				}
+
+					.assistive-selector option {
+						color: black !important;
+					}
 
 				.assistive-selector label {
 					padding-left: 26pt;
@@ -128,7 +134,7 @@
 						height: 18pt !important;
 						line-height: 21pt;
 						height: 18pt;
-						font-size: 14pt;
+						font-size: 13pt;
 						text-align: center;
 						font-weight: normal;
 						content: "q";
@@ -137,15 +143,40 @@
 						overflow: hidden;
 					}
 
+					.assistive-selector label:after {
+						font-family: sans-serif !important;
+						font-size: 8pt;
+						color: #444 !important;
+						top: 0px;
+						left: 100%;
+						margin-left: -26.5pt;
+						content: "\25bc";
+						background-color: #1A1A1A;
+						border-left: solid #333 1px;
+						-webkit-border-top-right-radius: 3px;
+						-moz-border-radius-topright: 3px;
+						-o-border-top-right-radius: 3px;
+						border-top-right-radius: 3px;
+						-webkit-border-bottom-right-radius: 3px;
+						-moz-border-radius-bottomright: 3px;
+						-o-border-bottom-right-radius: 3px;
+						border-bottom-right-radius: 3px;
+					}
+
+					.assistive-selector:hover label:after {
+						border-left: solid #BBB 1px !important;
+						background-color: #222;
+					}
+
 					.assistive-selector label:before {
 						margin-right: -13pt;
 						content: "q";
 					}
 
-					.assistive-selector label:after {
-						left: 100%;
-						margin-left: -26pt;
-						content: "y";
+					/* Custom Icons */
+
+					.assistive-selector.chapter-selector label:before {
+						content: "l";
 					}
 
 				.assistive-selector.on .state {
@@ -167,6 +198,10 @@
 	}
 	
 	.playing .videoHud:hover {
+		opacity: 1;
+	}
+
+	.playing.controlsvisible .videoHud {
 		opacity: 1;
 	}
 	
@@ -383,20 +418,18 @@
 					z-index:20;
 				}
 
-				input:focus ~ .thumb {
-					outline: solid green 6px;
+				.thumb.vertical {
+					top: -21px;
+					left: 9px;
+
 					-webkit-box-shadow: inset rgba(255,255,255,0.4) 1px 1px 0px,
-										rgba(0,0,0,0.36) 0px 2px 2px,
-										rgb(134,188,235) 0px 0px 1px 2px;
+										rgba(0,0,0,0.36) 0px -2px 2px;
 					-moz-box-shadow:	inset rgba(255,255,255,0.4) 1px 1px 0px,
-										rgba(0,0,0,0.36) 0px 2px 2px,
-										rgb(134,188,235) 0px 0px 1px 2px;
+										rgba(0,0,0,0.36) 0px -2px 2px;
 					-o-box-shadow:		inset rgba(255,255,255,0.4) 1px 1px 0px,
-										rgba(0,0,0,0.36) 0px 2px 2px,
-										rgb(134,188,235) 0px 0px 1px 2px;
+										rgba(0,0,0,0.36) 0px -2px 2px;
 					box-shadow:			inset rgba(255,255,255,0.4) 1px 1px 0px,
-										rgba(0,0,0,0.36) 0px 2px 2px,
-										rgb(134,188,235) 0px 0px 1px 2px;
+										rgba(0,0,0,0.36) 0px -2px 2px;
 				}
 				
 			.seekBar label.elapsed {

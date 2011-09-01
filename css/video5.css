@@ -36,6 +36,7 @@
 	-o-user-select: none;
 	user-select: none;
 	cursor: default !important;
+	overflow: hidden;
 }
 
 	.video5-container * {
@@ -186,7 +187,7 @@
 				.assistive-selector.off .state {
 					color: red;
 				}
-
+	
 	.playing .videoHud {
 		-webkit-transition: opacity 500ms linear;
 		-moz-transition: opacity 500ms linear;
@@ -202,7 +203,11 @@
 	}
 
 	.playing.controlsvisible .videoHud {
-		opacity: 1;
+		opacity: 1 !important;
+	}
+
+	.playing:-webkit-full-screen .videoHud:hover {
+		opacity: 0;
 	}
 	
 		.videoHud * {

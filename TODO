@@ -5,6 +5,8 @@ TODO:
 		-> Fix opera range rendering?
 -> // FIXED // Fix keyboard accessibility for range controls so space pauses video, left/up cursor and right/down cursor keys advance/rewind video significantly
 -> // FIXED // Add another keyboard accessibility fix so that controls fade in when a keyboard event within that video container is fired, and set a 5-10sec timer to fade out.
+-> Add large, central play button
+-> accept click on the video area as a playpause event
 -> Double check ARIA roles etc
 -> Build a flash front-end
 -> Check with screen reader
